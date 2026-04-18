@@ -1,0 +1,27 @@
+# ── Dataset & generated data ──────────────────────────────
+data/
+dataset_clean/
+X.npy
+y.npy
+classes.npy
+*.zip
+
+# ── Trained model ─────────────────────────────────────────
+model.pkl
+
+# ── Generated images ──────────────────────────────────────
+confusion_matrix.png
+dataset_overview.png
+class_distribution.png
+
+# ── Python cache ──────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*.pyo
+
+# ── Notebook checkpoints ──────────────────────────────────
+.ipynb_checkpoints/
+
+# ── OS / editor junk ──────────────────────────────────────
+.DS_Store
+Thumbs.db
