@@ -1,0 +1,38 @@
+# Keep serverless upload small: code + templates + model only
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+.git/
+
+# Data & training (never needed at request time)
+data/
+dataset_clean/
+*.npy
+*.npz
+*.zip
+
+# Docs & misc (large / irrelevant to API)
+*.md
+!README.md
+*.docx
+*.doc
+*.png
+!templates/**
+
+# Training & offline scripts (not imported by app.py)
+train_model.py
+train_model_svm.py
+data_cleaning.py
+compare_models.py
+
+# Extra model (app uses model_svm.pkl only)
+model.pkl
+
+# Local / IDE
+.vscode/
+.idea/
+*.log

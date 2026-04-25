@@ -1,0 +1,6 @@
+# Local training / data prep (not for Vercel)
+-r requirements.txt
+matplotlib
+opencv-python-headless>=4.8
+Pillow>=10.0
+tqdm
