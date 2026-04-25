@@ -17,7 +17,8 @@ FRAME_WIDTH = 640
 FRAME_HEIGHT = 480
 HOLD_FRAMES_NEEDED = 25
 CONFIDENCE_THRESH = 0.40
-PREVIEW_JPEG_QUALITY = 80
+# Lower quality = less bandwidth. This does not affect recognition.
+PREVIEW_JPEG_QUALITY = 70
 
 MODEL_NAME = "SVM"
 MODEL_PATH = "model_svm.pkl"

@@ -582,7 +582,8 @@
       if (!ws || ws.readyState !== WebSocket.OPEN || framePending) return;
       if (video.readyState < 2) return;
       ctx.drawImage(video, 0, 0, cap.width, cap.height);
-      const jpeg = cap.toDataURL("image/jpeg", 0.72).split(",")[1];
+      // Lower quality reduces bandwidth; recognition still works.
+      const jpeg = cap.toDataURL("image/jpeg", 0.55).split(",")[1];
       framePending = true;
       ws.send(JSON.stringify({ type: "frame", image: jpeg }));
     }
