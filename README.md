@@ -15,7 +15,7 @@ A real-time American Sign Language (ASL) alphabet detector that lets you write t
 ## Requirements
  
 - Python 3.10 to 3.13
-- A webcam
+- A webcam 
 
 Install dependencies:
 
