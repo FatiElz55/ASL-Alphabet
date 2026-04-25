@@ -1,9 +1,0 @@
-{
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "build": {
-    "env": {
-      "PIP_NO_CACHE_DIR": "1"
-    }
-  },
-  "installCommand": "python -m pip install --no-cache-dir --upgrade pip && python -m pip install --no-cache-dir -r requirements.txt"
-}
