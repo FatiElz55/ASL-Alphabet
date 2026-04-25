@@ -180,13 +180,30 @@
     .live-panel__inner { overflow: hidden; border-radius: calc(var(--radius) - 1px); }
 
     .preview-frame {
+      position: relative;
       width: 100%;
       aspect-ratio: 4 / 3;
       max-height: min(50vh, 400px);
       background: var(--cam);
     }
 
-    .preview-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+    .preview-frame video,
+    .preview-frame canvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    .preview-frame video {
+      object-fit: cover;
+      transform: scaleX(-1);
+    }
+
+    .preview-frame canvas {
+      pointer-events: none;
+    }
 
     .hold-wrap {
       padding: 0.7rem 0.9rem;
@@ -360,10 +377,7 @@
       border-radius: var(--radius-sm);
     }
 
-    video, canvas#cap {
-      position: fixed;
-      width: 1px; height: 1px; opacity: 0; pointer-events: none;
-    }
+    canvas#cap { position: fixed; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
   </style>
 </head>
 <body>
@@ -411,7 +425,6 @@
       </div>
     </div>
 
-    <video id="video" playsinline autoplay muted></video>
     <canvas id="cap" width="640" height="480"></canvas>
 
     <div class="detection" aria-label="Current detection">
@@ -438,7 +451,7 @@
     <p class="app-error" id="appError" role="alert" aria-live="assertive" hidden></p>
   </main>
 
-  <script>
+  <script type="module">
     (function initTheme() {
       const KEY = "signwriter-theme";
       const root = document.documentElement;
@@ -484,21 +497,29 @@
       setThemeUI();
     });
 
+    import vision from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.33/vision_bundle.mjs";
+    const { FilesetResolver, HandLandmarker } = vision;
+
     const HOLD_NEEDED = 25;
-    const video = document.getElementById("video");
-    const cap = document.getElementById("cap");
-    const ctx = cap.getContext("2d");
-    const preview = document.getElementById("preview");
+    const CONF_THRESH = 0.40;
+
+    const previewVideo = document.getElementById("previewVideo");
+    const overlay = document.getElementById("overlay");
+    const octx = overlay.getContext("2d");
+
     const letterEl = document.getElementById("letter");
     const confEl = document.getElementById("conf");
     const writtenEl = document.getElementById("written");
     const progFill = document.getElementById("progFill");
     const appError = document.getElementById("appError");
 
-    let ws = null;
-    let framePending = false;
-    let tickId = null;
-    let lastWritten = "";
+    let landmarker = null;
+    let inFlight = false;
+    let lastPredictAt = 0;
+
+    let text = "";
+    let currentLetter = "";
+    let holdCount = 0;
     let autoReadTimer = null;
 
     function clearError() {
@@ -518,86 +539,52 @@
       }
     }
 
-    function applyState(data) {
-      if (data.letter) {
-        letterEl.textContent = data.letter;
-        confEl.textContent = data.confidence > 0 ? Math.round(data.confidence * 100) + " %" : "";
+    function setDetected(letter, confidence) {
+      if (letter) {
+        letterEl.textContent = letter;
+        confEl.textContent = confidence > 0 ? Math.round(confidence * 100) + " %" : "";
       } else {
         letterEl.textContent = "—";
         confEl.textContent = "";
       }
-      const p = Math.min((data.hold_count || 0) / HOLD_NEEDED, 1);
+    }
+
+    function setProgress() {
+      const p = Math.min(holdCount / HOLD_NEEDED, 1);
       progFill.style.width = (p * 100).toFixed(1) + "%";
-      const nextText = data.text || "";
-      const changed = nextText !== lastWritten;
-      lastWritten = nextText;
-      writtenEl.value = nextText;
+    }
+
+    function refreshText() {
+      writtenEl.value = text;
+    }
+
+    function appendLetter(letter) {
+      if (!letter) return;
+      const low = letter.toLowerCase();
+      if (low === "nothing") return;
+      if (low === "space") text += " ";
+      else if (low === "del") text = text.slice(0, -1);
+      else text += letter;
+      refreshText();
+
       const autoRead = document.getElementById("autoRead").checked;
-      if (autoRead && changed && window.speechSynthesis && nextText.trim()) {
+      if (autoRead && window.speechSynthesis && text.trim()) {
         if (autoReadTimer) clearTimeout(autoReadTimer);
         autoReadTimer = setTimeout(() => speakWrittenText(false), 650);
       }
-      if (data.preview) preview.src = "data:image/jpeg;base64," + data.preview;
-    }
-
-    async function startCamera() {
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: { width: { ideal: 640 }, height: { ideal: 480 } },
-        audio: false,
-      });
-      video.srcObject = stream;
-      await video.play();
-    }
-
-    function connectWs() {
-      const proto = location.protocol === "https:" ? "wss:" : "ws:";
-      ws = new WebSocket(proto + "//" + location.host + "/ws");
-      ws.onopen = () => {
-        clearError();
-        if (tickId) clearInterval(tickId);
-        tickId = setInterval(sendFrameIfReady, 50);
-      };
-      ws.onmessage = (ev) => {
-        const data = JSON.parse(ev.data);
-        if (data.type === "hello") return;
-        if (data.type === "error") {
-          setConn(data.message || "Error", true);
-          framePending = false;
-          return;
-        }
-        if (data.type === "state") {
-          applyState(data);
-          framePending = false;
-        }
-      };
-      ws.onclose = () => {
-        if (tickId) clearInterval(tickId);
-        tickId = null;
-        setConn("Disconnected. Refresh the page to retry.", true);
-      };
-      ws.onerror = () => setConn("WebSocket error.", true);
-    }
-
-    function sendFrameIfReady() {
-      if (!ws || ws.readyState !== WebSocket.OPEN || framePending) return;
-      if (video.readyState < 2) return;
-      ctx.drawImage(video, 0, 0, cap.width, cap.height);
-      const jpeg = cap.toDataURL("image/jpeg", 0.72).split(",")[1];
-      framePending = true;
-      ws.send(JSON.stringify({ type: "frame", image: jpeg }));
     }
 
     document.getElementById("btnSpace").onclick = () => {
-      if (ws && ws.readyState === WebSocket.OPEN)
-        ws.send(JSON.stringify({ type: "action", action: "space" }));
+      text += " ";
+      refreshText();
     };
     document.getElementById("btnDel").onclick = () => {
-      if (ws && ws.readyState === WebSocket.OPEN)
-        ws.send(JSON.stringify({ type: "action", action: "backspace" }));
+      text = text.slice(0, -1);
+      refreshText();
     };
     document.getElementById("btnClear").onclick = () => {
-      if (ws && ws.readyState === WebSocket.OPEN)
-        ws.send(JSON.stringify({ type: "action", action: "clear" }));
+      text = "";
+      refreshText();
     };
     document.getElementById("btnCopy").onclick = async () => {
       try {
@@ -670,12 +657,137 @@
       }
     });
 
-    startCamera()
-      .then(connectWs)
-      .catch((err) => {
-        console.error(err);
-        setConn("Camera permission denied or unavailable.", true);
+    async function initCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
       });
+      previewVideo.srcObject = stream;
+      await previewVideo.play();
+    }
+
+    async function initLandmarker() {
+      const fileset = await FilesetResolver.forVisionTasks(
+        "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.33/wasm"
+      );
+      landmarker = await HandLandmarker.createFromOptions(fileset, {
+        baseOptions: {
+          modelAssetPath:
+            "https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task",
+        },
+        runningMode: "VIDEO",
+        numHands: 1,
+        minHandDetectionConfidence: 0.25,
+        minHandPresenceConfidence: 0.25,
+        minTrackingConfidence: 0.25,
+      });
+    }
+
+    function drawLandmarks(landmarks) {
+      const w = overlay.width;
+      const h = overlay.height;
+      octx.clearRect(0, 0, w, h);
+      if (!landmarks || landmarks.length === 0) return;
+      const pts = landmarks[0];
+      octx.fillStyle = "rgba(184,149,106,0.9)";
+      for (const p of pts) {
+        // Mirror X to match the user's mirrored view and training pipeline.
+        const x = (1 - p.x) * w;
+        const y = p.y * h;
+        octx.beginPath();
+        octx.arc(x, y, 3, 0, Math.PI * 2);
+        octx.fill();
+      }
+    }
+
+    function buildVector(pts) {
+      if (!pts || pts.length !== 21) return null;
+      const raw = pts.map((p) => [1 - p.x, p.y, p.z || 0]); // mirror x
+      const [wx, wy, wz] = raw[0];
+      const centered = raw.map(([x, y, z]) => [x - wx, y - wy, z - wz]);
+      const flat = centered.flat();
+      let maxAbs = 0;
+      for (const v of flat) maxAbs = Math.max(maxAbs, Math.abs(v));
+      maxAbs = maxAbs + 1e-6;
+      return flat.map((v) => v / maxAbs);
+    }
+
+    async function predictVector(vector) {
+      if (inFlight) return null;
+      inFlight = true;
+      try {
+        const res = await fetch("/predict", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ vector }),
+        });
+        if (!res.ok) return null;
+        return await res.json();
+      } catch {
+        return null;
+      } finally {
+        inFlight = false;
+      }
+    }
+
+    async function tick(nowMs) {
+      requestAnimationFrame(tick);
+      if (!landmarker || previewVideo.readyState < 2) return;
+
+      // Keep overlay canvas in sync with displayed video size.
+      const rect = overlay.getBoundingClientRect();
+      const targetW = Math.max(1, Math.floor(rect.width));
+      const targetH = Math.max(1, Math.floor(rect.height));
+      if (overlay.width !== targetW || overlay.height !== targetH) {
+        overlay.width = targetW;
+        overlay.height = targetH;
+      }
+
+      const result = landmarker.detectForVideo(previewVideo, nowMs);
+      const landmarks = result?.landmarks || [];
+      drawLandmarks(landmarks);
+
+      let letter = "";
+      let confidence = 0;
+
+      if (landmarks.length > 0) {
+        const vector = buildVector(landmarks[0]);
+        if (vector && nowMs - lastPredictAt >= 70) {
+          lastPredictAt = nowMs;
+          const pred = await predictVector(vector);
+          if (pred && pred.confidence >= CONF_THRESH) {
+            letter = pred.letter || "";
+            confidence = pred.confidence || 0;
+          }
+        }
+      }
+
+      // Hold logic (client-side).
+      if (letter && letter === currentLetter) holdCount += 1;
+      else {
+        currentLetter = letter;
+        holdCount = 0;
+      }
+      if (holdCount >= HOLD_NEEDED) {
+        appendLetter(letter);
+        holdCount = 0;
+      }
+
+      setProgress();
+      setDetected(letter, confidence);
+    }
+
+    (async () => {
+      try {
+        await initCamera();
+        await initLandmarker();
+        clearError();
+        requestAnimationFrame(tick);
+      } catch (err) {
+        console.error(err);
+        setConn("Camera unavailable or blocked by the browser.", true);
+      }
+    })();
   </script>
 </body>
 </html>
