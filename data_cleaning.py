@@ -165,5 +165,5 @@ for i, cls in enumerate(classes_array):
 
 print("\n" + "=" * 55)
 print("  data_cleaning.py DONE")
-print("  Next step → python train_model.py")
+print("  Next step → python train_model_svm.py")
 print("=" * 55)

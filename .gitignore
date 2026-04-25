@@ -7,7 +7,7 @@ classes.npy
 *.zip
 
 # ── Trained model ─────────────────────────────────────────
-model.pkl
+model_svm.pkl
 
 # ── Generated images ──────────────────────────────────────
 confusion_matrix.png

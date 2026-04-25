@@ -7,8 +7,8 @@ A real-time American Sign Language (ASL) alphabet detector that lets you write t
 ## How it works
 
 1. **Data cleaning** - scans the ASL dataset, filters bad images, and extracts 21 hand-landmark vectors using MediaPipe.
-2. **Training** - trains a Random Forest classifier on the extracted landmarks.
-3. **App** - opens a live webcam window; hold a sign steady for ~1 second to add the letter to the text area.
+2. **Training** - trains an SVM classifier on the extracted landmarks.
+3. **Web app** - open the web UI; hold a sign steady for ~1 second to add the letter to the text area.
 
 ---
 
@@ -20,7 +20,7 @@ A real-time American Sign Language (ASL) alphabet detector that lets you write t
 Install dependencies:
 
 ```bash
-pip install mediapipe==0.10.33 opencv-python numpy scikit-learn Pillow tqdm matplotlib
+pip install -r requirements.txt
 ```
 
 ---
@@ -60,10 +60,10 @@ Produces: X.npy, y.npy, classes.npy
 ### Step 2 - Train the model
 
 ```bash
-python train_model.py
+python train_model_svm.py
 ```
 
-Produces: model.pkl, confusion_matrix.png
+Produces: model_svm.pkl, confusion_matrix_svm.png
 
 ### Step 3 - Launch the app
 
@@ -93,6 +93,6 @@ To write the same letter twice (e.g. AA), hold the sign for a second, release br
 |------|-------------|
 | hand_detector.py | MediaPipe hand landmark extractor (shared module) |
 | data_cleaning.py | Dataset cleaning and landmark extraction |
-| train_model.py | Random Forest training and evaluation |
-| app.py | Tkinter real-time webcam interface |
+| train_model_svm.py | SVM training and evaluation |
+| app.py | FastAPI web app |
 | vpo.ipynb | Notebook with MediaPipe exploration |
