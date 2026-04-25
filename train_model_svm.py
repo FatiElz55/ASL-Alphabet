@@ -1,6 +1,8 @@
 import numpy as np
 import joblib
-from sklearn.ensemble import RandomForestClassifier
+from sklearn.svm import SVC
+from sklearn.preprocessing import StandardScaler
+from sklearn.pipeline import Pipeline
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
     accuracy_score,
@@ -8,6 +10,7 @@ from sklearn.metrics import (
     ConfusionMatrixDisplay,
 )
 import matplotlib.pyplot as plt
+
 
 print("\n" + "=" * 55)
 print("  STEP 1 — Loading data")
@@ -39,17 +42,21 @@ print(f"Test samples     : {len(X_test)}")
 
 
 print("\n" + "=" * 55)
-print("  STEP 3 — Training Random Forest")
+print("  STEP 3 — Training SVM  (RBF kernel, C=10, gamma=scale)")
 print("=" * 55)
+print("  (This may take a minute on large datasets...)")
 
-model = RandomForestClassifier(
-    n_estimators=200,
-    max_depth=None,
-    min_samples_leaf=1,
-    n_jobs=-1,
-    random_state=42,
-    verbose=1,
-)
+
+model = Pipeline([
+    ("scaler", StandardScaler()),
+    ("svc",    SVC(
+        kernel="rbf",
+        C=10,
+        gamma="scale",
+        probability=True,   
+        random_state=42,
+    )),
+])
 model.fit(X_train, y_train)
 
 
@@ -72,22 +79,22 @@ ConfusionMatrixDisplay.from_predictions(
     ax=ax,
     colorbar=False,
 )
-ax.set_title(f"Confusion Matrix — Test accuracy: {acc * 100:.1f}%", fontsize=13)
+ax.set_title(f"SVM — Confusion Matrix — Test accuracy: {acc * 100:.1f}%", fontsize=13)
 plt.tight_layout()
-plt.savefig("confusion_matrix.png", dpi=120, bbox_inches="tight")
+plt.savefig("confusion_matrix_svm.png", dpi=120, bbox_inches="tight")
 plt.show()
-print("Confusion matrix saved → confusion_matrix.png")
+print("Confusion matrix saved → confusion_matrix_svm.png")
 
 
 print("\n" + "=" * 55)
 print("  STEP 5 — Saving model")
 print("=" * 55)
 
-MODEL_PATH = "model.pkl"
+MODEL_PATH = "model_svm.pkl"
 joblib.dump({"model": model, "classes": classes}, MODEL_PATH)
 print(f"\nModel saved → {MODEL_PATH}")
 
 print("\n" + "=" * 55)
-print("  train_model.py DONE")
-print("  Next step → python app.py")
+print("  train_model_svm.py DONE")
+print("  To use this model in app.py, change MODEL_PATH to 'model_svm.pkl'")
 print("=" * 55)

@@ -1,19 +1,3 @@
-"""
-data_cleaning.py
-================
-Walks the ASL alphabet training folder, filters out bad images, extracts
-MediaPipe hand-landmark vectors, and saves the numpy arrays needed for
-training.
-
-Outputs (written to the project root):
-  X.npy        — float32 array of shape (N, 63)
-  y.npy        — int array of shape (N,)  (label-encoded class indices)
-  classes.npy  — string array of class names (matches label encoding)
-
-Run:
-    python data_cleaning.py
-"""
-
 import os
 import shutil
 
@@ -23,9 +7,6 @@ from tqdm import tqdm
 
 from hand_detector import HandDetector
 
-# ─────────────────────────────────────────────
-# CONFIGURATION
-# ─────────────────────────────────────────────
 DATASET_DIR    = r"C:\Users\Mery\OneDrive\Desktop\vpo\data\asl_alphabet_train\asl_alphabet_train"
 CLEAN_DIR      = "dataset_clean"
 MAX_PER_CLASS  = 1000   # set to None to use all images
@@ -35,9 +16,6 @@ OUTPUT_Y       = "y.npy"
 OUTPUT_CLASSES = "classes.npy"
 
 
-# ─────────────────────────────────────────────
-# STEP 1 — DISCOVER CLASSES
-# ─────────────────────────────────────────────
 print("\n" + "=" * 55)
 print("  STEP 1 — Discovering classes")
 print("=" * 55)
@@ -51,9 +29,6 @@ print(f"\nClasses found : {len(classes)}")
 print(f"Labels        : {classes}\n")
 
 
-# ─────────────────────────────────────────────
-# STEP 2 — CLEAN IMAGES INTO dataset_clean/
-# ─────────────────────────────────────────────
 print("=" * 55)
 print("  STEP 2 — Cleaning images")
 print("=" * 55)
@@ -106,9 +81,6 @@ print(f"Rejected : {total_rejected}")
 print(f"Clean dir: {CLEAN_DIR}/")
 
 
-# ─────────────────────────────────────────────
-# STEP 3 — EXTRACT MEDIAPIPE LANDMARKS
-# ─────────────────────────────────────────────
 print("\n" + "=" * 55)
 print("  STEP 3 — Extracting MediaPipe landmarks")
 print("=" * 55)
@@ -149,9 +121,6 @@ print(f"\nVectors extracted : {len(X)}")
 print(f"Images skipped    : {skipped} (no hand detected)")
 
 
-# ─────────────────────────────────────────────
-# STEP 4 — ENCODE LABELS AND SAVE
-# ─────────────────────────────────────────────
 print("\n" + "=" * 55)
 print("  STEP 4 — Encoding labels & saving")
 print("=" * 55)
@@ -171,9 +140,6 @@ print(f"y.npy       → shape {y_arr.shape}")
 print(f"classes.npy → {list(classes_array)}")
 
 
-# ─────────────────────────────────────────────
-# STEP 5 — SANITY CHECK
-# ─────────────────────────────────────────────
 print("\n" + "=" * 55)
 print("  STEP 5 — Sanity check")
 print("=" * 55)

@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="color-scheme" content="dark light" />
+  <title>SignWriter</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    rel="stylesheet"
+  />
+  <style>
+    /* Refined dark: near-black, warm off-white, single bronze accent */
+    html[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #0c0c0b;
+      --bg-subtle: #10100f;
+      --surface: #161615;
+      --surface-2: #1c1c1a;
+      --text: #f2f0ec;
+      --text-muted: #8c8a85;
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hair: rgba(255, 255, 255, 0.04);
+      --cam: #000;
+      --accent: #b8956a;
+      --accent-soft: rgba(184, 149, 106, 0.14);
+      --danger: #c97b7b;
+      --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+      --header-bg: rgba(12, 12, 11, 0.72);
+    }
+
+    /* Light: paper, ink, same accent in darker form */
+    html[data-theme="light"] {
+      color-scheme: light;
+      --bg: #f5f3ef;
+      --bg-subtle: #ebe8e2;
+      --surface: #fffcf7;
+      --surface-2: #f0ebe3;
+      --text: #1a1917;
+      --text-muted: #5e5c58;
+      --border: rgba(0, 0, 0, 0.09);
+      --border-hair: rgba(0, 0, 0, 0.04);
+      --cam: #0a0a09;
+      --accent: #7a5c32;
+      --accent-soft: rgba(122, 92, 50, 0.1);
+      --danger: #a84848;
+      --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--accent);
+      --header-bg: rgba(255, 252, 247, 0.8);
+    }
+
+    :root {
+      --radius: 12px;
+      --radius-sm: 8px;
+      --font: "Manrope", system-ui, sans-serif;
+      --font-mono: "IBM Plex Mono", "Consolas", monospace;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; }
+
+    html { -webkit-text-size-adjust: 100%; }
+
+    body {
+      margin: 0;
+      min-height: 100dvh;
+      font-family: var(--font);
+      font-size: clamp(0.9rem, 0.86rem + 0.15vw, 1rem);
+      color: var(--text);
+      background: var(--bg);
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { transition-duration: 0.01ms !important; }
+    }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    .app-header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      padding: 0.7rem 1.1rem;
+      background: var(--header-bg);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .app-header__inner {
+      max-width: 40rem;
+      margin: 0 auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.75rem 1rem;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+    }
+
+    .brand__mark {
+      width: 2.1rem;
+      height: 2.1rem;
+      border-radius: 9px;
+      background: var(--accent);
+      display: grid;
+      place-items: center;
+      font-weight: 800;
+      font-size: 0.85rem;
+      color: #111;
+    }
+
+    html[data-theme="light"] .brand__mark {
+      color: #fffcf7;
+    }
+
+    .brand__text h1 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .brand__text p {
+      margin: 0.1rem 0 0 0;
+      font-size: 0.7rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+
+    .theme-icon-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 2.5rem;
+      height: 2.5rem;
+      margin: 0;
+      padding: 0;
+      color: var(--text-muted);
+      background: transparent;
+      border: none;
+      border-radius: var(--radius-sm);
+      cursor: pointer;
+      transition: color 0.15s, background 0.15s;
+    }
+
+    .theme-icon-btn:hover { color: var(--text); background: var(--surface-2); }
+    .theme-icon-btn:focus-visible { outline: none; box-shadow: var(--focus); }
+
+    .theme-icon-btn svg { width: 1.2rem; height: 1.2rem; display: block; }
+
+    .app-main {
+      max-width: 40rem;
+      margin: 0 auto;
+      padding: 1.1rem 1rem 2.2rem;
+    }
+
+    .live-panel {
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+      background: var(--surface);
+      box-shadow: 0 1px 0 var(--border-hair);
+    }
+
+    .live-panel__inner { overflow: hidden; border-radius: calc(var(--radius) - 1px); }
+
+    .preview-frame {
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      max-height: min(50vh, 400px);
+      background: var(--cam);
+    }
+
+    .preview-frame img { width: 100%; height: 100%; object-fit: contain; display: block; }
+
+    .hold-wrap {
+      padding: 0.7rem 0.9rem;
+      background: var(--bg-subtle);
+      border-top: 1px solid var(--border);
+    }
+
+    .hold-row { display: flex; align-items: center; gap: 0.6rem; }
+
+    .hold-row__label {
+      font-size: 0.6rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: var(--text-muted);
+    }
+
+    .prog-track {
+      flex: 1;
+      min-width: 0;
+      height: 4px;
+      background: var(--border);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .prog-fill {
+      height: 100%;
+      width: 0%;
+      background: var(--accent);
+      border-radius: 99px;
+      transition: width 0.08s linear;
+    }
+
+    .text-block {
+      padding: 0.85rem 0.9rem 0.95rem;
+      border-top: 1px solid var(--border);
+    }
+
+    .text-block__label {
+      display: block;
+      font-size: 0.6rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.11em;
+      color: var(--text-muted);
+      margin-bottom: 0.4rem;
+    }
+
+    textarea.written {
+      width: 100%;
+      min-height: 7rem;
+      max-height: 38vh;
+      resize: vertical;
+      font-family: var(--font-mono);
+      font-size: 0.98rem;
+      line-height: 1.5;
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem 0.85rem;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    textarea.written:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px var(--accent-soft);
+    }
+
+    .detection {
+      text-align: center;
+      margin: 1.15rem 0 0.25rem;
+      padding: 0.7rem 0.5rem;
+    }
+
+    .detected {
+      font-size: clamp(2.2rem, 8vw, 2.8rem);
+      font-weight: 700;
+      line-height: 1.05;
+      color: var(--text);
+      letter-spacing: -0.02em;
+    }
+
+    .conf {
+      font-size: 0.78rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      min-height: 1.2em;
+      margin-top: 0.35rem;
+    }
+
+    .action-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.45rem;
+      margin-top: 0.9rem;
+    }
+
+    @media (max-width: 420px) {
+      .action-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    button {
+      min-height: 2.5rem;
+      font-family: inherit;
+      font-size: 0.6rem;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text);
+      background: var(--surface-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 0.35rem 0.4rem;
+      cursor: pointer;
+      transition: background 0.12s, border-color 0.12s, color 0.12s, transform 0.08s;
+    }
+
+    button:hover:not(:disabled) {
+      background: var(--accent-soft);
+      border-color: var(--text-muted);
+    }
+
+    button:focus-visible { outline: none; box-shadow: var(--focus); }
+
+    button:active:not(:disabled) { transform: scale(0.99); }
+
+    button.danger {
+      color: var(--danger);
+      background: var(--surface);
+    }
+
+    button.danger:hover:not(:disabled) {
+      background: var(--bg-subtle);
+      border-color: var(--danger);
+    }
+
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    .tts {
+      margin-top: 0.8rem;
+      padding: 0.55rem 0.7rem;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+    }
+
+    .tts label {
+      display: flex;
+      align-items: center;
+      gap: 0.45rem;
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .tts input { width: 0.9rem; height: 0.9rem; accent-color: var(--accent); }
+
+    .app-error {
+      margin-top: 0.65rem;
+      padding: 0.5rem 0.7rem;
+      font-size: 0.78rem;
+      line-height: 1.4;
+      color: var(--danger);
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-left: 3px solid var(--danger);
+      border-radius: var(--radius-sm);
+    }
+
+    video, canvas#cap {
+      position: fixed;
+      width: 1px; height: 1px; opacity: 0; pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <header class="app-header" role="banner">
+    <div class="app-header__inner">
+      <div class="brand">
+        <div class="brand__mark" aria-hidden="true">S</div>
+        <div class="brand__text">
+          <h1>SignWriter</h1>
+          <p>Real-time sign to text</p>
+        </div>
+      </div>
+      <button type="button" class="theme-icon-btn" id="themeToggle" aria-label="Use light theme" title="Use light theme">
+        <svg id="themeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <circle cx="12" cy="12" r="4" />
+          <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+        </svg>
+      </button>
+    </div>
+  </header>
+
+  <main class="app-main" id="main">
+    <div class="live-panel" aria-label="Camera and output">
+      <div class="live-panel__inner">
+        <div class="preview-frame">
+          <img
+            id="preview"
+            src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"
+            alt="Live hand tracking preview"
+          />
+        </div>
+        <div class="hold-wrap">
+          <div class="hold-row">
+            <span class="hold-row__label">Hold</span>
+            <div class="prog-track" role="progressbar" aria-label="Stability to confirm">
+              <div class="prog-fill" id="progFill"></div>
+            </div>
+          </div>
+        </div>
+        <div class="text-block">
+          <span class="text-block__label" id="written-label">Your text</span>
+          <label class="visually-hidden" for="written">Composed text</label>
+          <textarea class="written" id="written" readonly rows="5" spellcheck="false"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <video id="video" playsinline autoplay muted></video>
+    <canvas id="cap" width="640" height="480"></canvas>
+
+    <div class="detection" aria-label="Current detection">
+      <div class="detected" id="letter" aria-live="polite">—</div>
+      <div class="conf" id="conf" aria-live="polite"></div>
+    </div>
+
+    <div class="action-grid" role="group" aria-label="Text actions">
+      <button type="button" id="btnSpace">Space</button>
+      <button type="button" id="btnDel">Back</button>
+      <button type="button" class="danger" id="btnClear">Clear</button>
+      <button type="button" id="btnCopy">Copy</button>
+      <button type="button" id="btnSpeak">Speak</button>
+      <button type="button" id="btnStopSpeak">Stop</button>
+    </div>
+
+    <div class="tts">
+      <label>
+        <input type="checkbox" id="autoRead" />
+        <span>Auto-read when text changes</span>
+      </label>
+    </div>
+
+    <p class="app-error" id="appError" role="alert" aria-live="assertive" hidden></p>
+  </main>
+
+  <script>
+    (function initTheme() {
+      const KEY = "signwriter-theme";
+      const root = document.documentElement;
+      const saved = localStorage.getItem(KEY);
+      const mode =
+        saved ||
+        (window.matchMedia("(prefers-color-scheme: light)").matches
+          ? "light"
+          : "dark");
+      root.setAttribute("data-theme", mode);
+    })();
+
+    const themeToggle = document.getElementById("themeToggle");
+    const themeIcon = document.getElementById("themeIcon");
+
+    const iconSun =
+      '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />';
+    const iconMoon = '<path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />';
+
+    function currentTheme() {
+      return document.documentElement.getAttribute("data-theme") || "dark";
+    }
+
+    function setThemeUI() {
+      const t = currentTheme();
+      if (t === "light") {
+        themeIcon.innerHTML = iconMoon;
+        themeToggle.setAttribute("aria-label", "Use dark theme");
+        themeToggle.setAttribute("title", "Use dark theme");
+      } else {
+        themeIcon.innerHTML = iconSun;
+        themeToggle.setAttribute("aria-label", "Use light theme");
+        themeToggle.setAttribute("title", "Use light theme");
+      }
+    }
+
+    setThemeUI();
+
+    themeToggle.addEventListener("click", () => {
+      const next = currentTheme() === "dark" ? "light" : "dark";
+      document.documentElement.setAttribute("data-theme", next);
+      localStorage.setItem("signwriter-theme", next);
+      setThemeUI();
+    });
+
+    const HOLD_NEEDED = 25;
+    const video = document.getElementById("video");
+    const cap = document.getElementById("cap");
+    const ctx = cap.getContext("2d");
+    const preview = document.getElementById("preview");
+    const letterEl = document.getElementById("letter");
+    const confEl = document.getElementById("conf");
+    const writtenEl = document.getElementById("written");
+    const progFill = document.getElementById("progFill");
+    const appError = document.getElementById("appError");
+
+    let ws = null;
+    let framePending = false;
+    let tickId = null;
+    let lastWritten = "";
+    let autoReadTimer = null;
+
+    function clearError() {
+      if (!appError) return;
+      appError.textContent = "";
+      appError.hidden = true;
+    }
+
+    /** Only shows a visible bar for real errors; informational messages are omitted. */
+    function setConn(msg, isErr) {
+      if (!appError) return;
+      if (isErr && msg) {
+        appError.textContent = msg;
+        appError.hidden = false;
+      } else {
+        clearError();
+      }
+    }
+
+    function applyState(data) {
+      if (data.letter) {
+        letterEl.textContent = data.letter;
+        confEl.textContent = data.confidence > 0 ? Math.round(data.confidence * 100) + " %" : "";
+      } else {
+        letterEl.textContent = "—";
+        confEl.textContent = "";
+      }
+      const p = Math.min((data.hold_count || 0) / HOLD_NEEDED, 1);
+      progFill.style.width = (p * 100).toFixed(1) + "%";
+      const nextText = data.text || "";
+      const changed = nextText !== lastWritten;
+      lastWritten = nextText;
+      writtenEl.value = nextText;
+      const autoRead = document.getElementById("autoRead").checked;
+      if (autoRead && changed && window.speechSynthesis && nextText.trim()) {
+        if (autoReadTimer) clearTimeout(autoReadTimer);
+        autoReadTimer = setTimeout(() => speakWrittenText(false), 650);
+      }
+      if (data.preview) preview.src = "data:image/jpeg;base64," + data.preview;
+    }
+
+    async function startCamera() {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { width: { ideal: 640 }, height: { ideal: 480 } },
+        audio: false,
+      });
+      video.srcObject = stream;
+      await video.play();
+    }
+
+    function connectWs() {
+      const proto = location.protocol === "https:" ? "wss:" : "ws:";
+      ws = new WebSocket(proto + "//" + location.host + "/ws");
+      ws.onopen = () => {
+        clearError();
+        if (tickId) clearInterval(tickId);
+        tickId = setInterval(sendFrameIfReady, 50);
+      };
+      ws.onmessage = (ev) => {
+        const data = JSON.parse(ev.data);
+        if (data.type === "hello") return;
+        if (data.type === "error") {
+          setConn(data.message || "Error", true);
+          framePending = false;
+          return;
+        }
+        if (data.type === "state") {
+          applyState(data);
+          framePending = false;
+        }
+      };
+      ws.onclose = () => {
+        if (tickId) clearInterval(tickId);
+        tickId = null;
+        setConn("Disconnected. Refresh the page to retry.", true);
+      };
+      ws.onerror = () => setConn("WebSocket error.", true);
+    }
+
+    function sendFrameIfReady() {
+      if (!ws || ws.readyState !== WebSocket.OPEN || framePending) return;
+      if (video.readyState < 2) return;
+      ctx.drawImage(video, 0, 0, cap.width, cap.height);
+      const jpeg = cap.toDataURL("image/jpeg", 0.72).split(",")[1];
+      framePending = true;
+      ws.send(JSON.stringify({ type: "frame", image: jpeg }));
+    }
+
+    document.getElementById("btnSpace").onclick = () => {
+      if (ws && ws.readyState === WebSocket.OPEN)
+        ws.send(JSON.stringify({ type: "action", action: "space" }));
+    };
+    document.getElementById("btnDel").onclick = () => {
+      if (ws && ws.readyState === WebSocket.OPEN)
+        ws.send(JSON.stringify({ type: "action", action: "backspace" }));
+    };
+    document.getElementById("btnClear").onclick = () => {
+      if (ws && ws.readyState === WebSocket.OPEN)
+        ws.send(JSON.stringify({ type: "action", action: "clear" }));
+    };
+    document.getElementById("btnCopy").onclick = async () => {
+      try {
+        await navigator.clipboard.writeText(writtenEl.value);
+        clearError();
+      } catch {
+        setConn("Copy failed — select text manually.", true);
+      }
+    };
+
+    const btnSpeak = document.getElementById("btnSpeak");
+    const btnStopSpeak = document.getElementById("btnStopSpeak");
+
+    function stopSpeech() {
+      if (window.speechSynthesis) window.speechSynthesis.cancel();
+    }
+
+    function speakWrittenText(showStatus) {
+      const text = (writtenEl.value || "").trim();
+      if (!text) {
+        if (showStatus) setConn("Nothing to read aloud.", true);
+        return;
+      }
+      if (!window.speechSynthesis) {
+        if (showStatus) setConn("Text-to-speech is not available in this browser.", true);
+        return;
+      }
+      stopSpeech();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = document.documentElement.lang || "en-US";
+      u.rate = 1;
+      u.onerror = () => setConn("Speech playback error.", true);
+      u.onend = () => {
+        if (showStatus) clearError();
+      };
+      window.speechSynthesis.speak(u);
+    }
+
+    if (window.speechSynthesis) {
+      const primeVoices = () => window.speechSynthesis.getVoices();
+      primeVoices();
+      window.speechSynthesis.onvoiceschanged = primeVoices;
+    }
+
+    btnSpeak.onclick = () => speakWrittenText(true);
+    btnStopSpeak.onclick = () => {
+      stopSpeech();
+      clearError();
+    };
+
+    if (!window.speechSynthesis) {
+      btnSpeak.disabled = true;
+      btnStopSpeak.disabled = true;
+      document.getElementById("autoRead").disabled = true;
+    }
+
+    window.addEventListener("keydown", (e) => {
+      if (e.code === "Escape") {
+        stopSpeech();
+        clearError();
+        return;
+      }
+      if (e.code === "Space") {
+        e.preventDefault();
+        document.getElementById("btnSpace").click();
+      }
+      if (e.code === "Backspace" || e.code === "Delete") {
+        e.preventDefault();
+        document.getElementById("btnDel").click();
+      }
+    });
+
+    startCamera()
+      .then(connectWs)
+      .catch((err) => {
+        console.error(err);
+        setConn("Camera permission denied or unavailable.", true);
+      });
+  </script>
+</body>
+</html>
