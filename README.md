@@ -96,3 +96,10 @@ To write the same letter twice (e.g. AA), hold the sign for a second, release br
 | train_model_svm.py | SVM training and evaluation |
 | app.py | FastAPI web app |
 | vpo.ipynb | Notebook with MediaPipe exploration |
+
+
+## Réalisé par
+EL Azrague fatima Ezzahra
+Salwa Hani
+Elhabib Ayat
+Daoubih Ikram
