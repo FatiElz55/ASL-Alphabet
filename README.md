@@ -99,7 +99,8 @@ To write the same letter twice (e.g. AA), hold the sign for a second, release br
 
 
 ## Réalisé par
-EL Azrague Fatima Ezzahra
-Salwa Hani
-Elhabib Ayat
-Daoubih Ikram
+
+- EL Azrague Fatima Ezzahra  
+- Salwa Hani  
+- Elhabib Ayat  
+- Daoubih Ikram
